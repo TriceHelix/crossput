@@ -3,21 +3,45 @@
 # It should be considered as part of the public domain, regardless of any licenses applying to other contents this file is shipped along.
 # Hence, no warranties or similar concepts apply to the functionality provided by the module.
 
-set(fancy_name "MSGDK (Microsoft Game Development Kit)")
+set(fancy_gdk_name "MSGDK (Microsoft Game Development Kit)")
+
+macro(TryMessage arg_severity arg_message)
+    if(NOT (${MSGDK_FIND_QUIETLY}))
+        message(${arg_severity} "${arg_message}")
+    endif()
+endmacro()
+
+macro(SearchFail arg_message)
+    if(${MSGDK_FIND_REQUIRED})
+        message(FATAL_ERROR "${arg_message}")
+    elseif(NOT (${MSGDK_FIND_QUIETLY}))
+        message(STATUS "${arg_message}")
+    endif()
+
+    set(MSGDK_FOUND FALSE)
+endmacro()
+
+if(NOT (${WIN32}))
+    SearchFail("${fancy_gdk_name} is not supported on platforms that are not Windows or Windows-like.")
+    return()
+endif()
 
 set(search_paths
     "C:/Program Files/Microsoft GDK/"
     "C:/Program Files (x86)/Microsoft GDK/"
 )
 
-if(NOT WIN32)
-    message(FATAL_ERROR "${fancy_name} is not supported on platforms that are not Windows or Windows-like.")
+if(DEFINED ENV{GameDK})
+    list(APPEND "$ENV{GameDK}")
 endif()
 
 if(DEFINED MSDGK_ROOT_DIR)
     list(APPEND search_paths "${MSDGK_ROOT_DIR}/")
 endif()
 
+list(REMOVE_DUPLICATES search_paths)
+
+# workaround for CMake's limited regex capabilities
 string(REPEAT [0-9] 6 any_six_digits)
 set(version_regex "^${any_six_digits}$")
 
@@ -50,11 +74,7 @@ endforeach()
 list(LENGTH found_versions num_versions)
 if(${num_versions} LESS 1)
     # -> no installs found
-    if(NOT MSGDK_FIND_QUIETLY)
-        message(FATAL_ERROR "Unable to locate ${fancy_name}. Searched directories: ${search_paths}")
-    endif()
-
-    set(MSGDK_FOUND FALSE)
+    SearchFail("Unable to locate ${fancy_gdk_name}. Searched directories: ${search_paths}")
     return()
 endif()
 
@@ -62,25 +82,20 @@ set(use_version 0)
 set(base_path "")
 
 if(DEFINED MSGDK_FIND_VERSION)
-    if((NOT ${MSGDK_FIND_VERSION} MATCHES ${version_regex}) AND (NOT MSGDK_FIND_QUIETLY))
-        message(FATAL_ERROR "Requested ${fancy_name} version \"${MSGDK_FIND_VERSION}\" does not match the conventional format of six numerical digits.")
+    if(NOT ${MSGDK_FIND_VERSION} MATCHES ${version_regex})
+        SearchFail("Requested ${fancy_gdk_name} version \"${MSGDK_FIND_VERSION}\" does not match the conventional format of six numerical digits.")
+        return()
     endif()
 
     # use specific version
     list(FIND found_versions ${MSGDK_FIND_VERSION} specific_version_index)
     if(${specific_version_index} LESS 0)
         # -> specific version not found
-        if(NOT MSGDK_FIND_QUIETLY)
-            message(FATAL_ERROR "Unable to locate version ${MSGDK_FIND_VERSION} of ${fancy_name}. Located ${num_versions} other version(s): ${found_version_paths}")
-        endif()
-
-        set(MSGDK_FOUND FALSE)
+        SearchFail("Unable to locate version ${MSGDK_FIND_VERSION} of ${fancy_gdk_name}. Located ${num_versions} other version(s): ${found_version_paths}")
         return()
     endif()
 
-    if(NOT MSGDK_FIND_QUIETLY)
-        message(STATUS "Using specified version of ${fancy_name}: ${latest_version}")
-    endif()
+    TryMessage(STATUS "Using specified version of ${fancy_gdk_name}: ${latest_version}")
 
     set(use_version ${MSGDK_FIND_VERSION})
     list(GET found_version_paths ${specific_version_index} base_path)
@@ -91,8 +106,8 @@ else()
     set(i 0)
     foreach(v ${found_versions})
         if(${v} GREATER_EQUAL ${latest_version})
-            if(${v} EQUAL ${latest_version} AND NOT MSGDK_FIND_QUIETLY)
-                message(WARNING "Duplicate ${fancy_name} versions found (${v}).")
+            if(${v} EQUAL ${latest_version})
+                TryMessage(WARNING "Duplicate ${fancy_gdk_name} versions found (${v}).")
             else()
                 set(latest_version ${v})
                 set(latest_version_index ${i})
@@ -101,9 +116,7 @@ else()
         math(EXPR i "${i} + 1")
     endforeach()
 
-    if(NOT MSGDK_FIND_QUIETLY)
-        message(STATUS "Using latest version of ${fancy_name}: ${latest_version}")
-    endif()
+    TryMessage(STATUS "Using latest version of ${fancy_gdk_name}: ${latest_version}")
     
     set(use_version ${latest_version})
     list(GET found_version_paths ${latest_version_index} base_path)
@@ -113,11 +126,14 @@ endif()
 file(GLOB lib_subdirs LIST_DIRECTORIES TRUE "${base_path}/GRDK/GameKit/Lib/*")
 list(LENGTH lib_subdirs lib_subdirs_length)
 if(NOT ${lib_subdirs_length} EQUAL 1)
-    message(AUTHOR_WARNING "Multiple lib subdirectories found, please investigate.")
+    SearchFail("Either zero or multiple subdirectories were found at \"${base_path}/GRDK/GameKit/Lib/\", when a single one was expected. Is the MSGDK installed correctly?")
+    return()
 endif()
+
 list(GET lib_subdirs 0 lib_base_path)
-if((NOT IS_DIRECTORY "${lib_base_path}") AND (NOT MSGDK_FIND_QUIETLY))
-    message(FATAL_ERROR "Path \"${lib_base_path}\" either does not exist or is not a directory.")
+if(NOT IS_DIRECTORY "${lib_base_path}")
+    SearchFail("Path \"${lib_base_path}\" either does not exist or is not a directory.")
+    return()
 endif()
 
 # create main target

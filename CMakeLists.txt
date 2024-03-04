@@ -15,7 +15,7 @@ project(crossput
     VERSION 0.1.1
 )
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # options
 option(
@@ -51,15 +51,22 @@ option(
     FALSE
 )
 
+if(${MSVC})
+    # fix MSVC "feature" that incorrectly reports cpp-standard
+    add_compile_options(/Zc:__cplusplus)
+endif()
+
 # crossput main library
-add_library(crossput SHARED "src/impl.cpp")
+add_library(crossput SHARED "")
+target_include_directories(crossput PUBLIC "include")
+target_sources(crossput PRIVATE "src/impl.cpp")
+
 set_target_properties(
     crossput
     PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
 )
-target_include_directories(crossput PUBLIC "include")
 
 # enable/disable features
 if(${CROSSPUT_FEATURE_CALLBACK})
@@ -75,7 +82,7 @@ if(${CROSSPUT_FEATURE_AGGREGATE})
 endif()
 
 # platform-dependent details
-if(WIN32)
+if(${WIN32})
     target_sources(crossput PRIVATE "src/impl_windows.cpp")
 
     # export all symbols
@@ -86,12 +93,7 @@ if(WIN32)
     add_dependencies(crossput MSGDK::GameInput)
     target_link_libraries(crossput PUBLIC MSGDK::GameInput)
     target_compile_definitions(crossput PRIVATE "NOMINMAX")
-
-    if(MSVC)
-        # fix MSVC "feature"
-        target_compile_options(crossput PUBLIC "/Zc:__cplusplus")
-    endif()
-elseif(LINUX)
+elseif(${LINUX})
     target_sources(crossput PRIVATE "src/impl_linux.cpp")
 else()
     message(FATAL_ERROR "Unsupported target platform.")
@@ -100,8 +102,7 @@ endif()
 function(add_demo_executable arg_name arg_source)
     add_executable(${arg_name} "${arg_source}")
     set_target_properties(
-        ${arg_name}
-        PROPERTIES
+        ${arg_name} PROPERTIES
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED TRUE
     )
