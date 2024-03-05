@@ -1,13 +1,12 @@
-/*=================================================================================
-*       +----------+
-*       | crossput |
-*       +----------+
-* Copyright 2024 Trice Helix
-* 
-* This file is part of crossput and is distributed under the BSD-3-Clause License.
-* Please refer to LICENSE.txt for additional information.
-* =================================================================================
-*/
+/*================================================================================= *
+*                                   +----------+                                    *
+*                                   | crossput |                                    *
+*                                   +----------+                                    *
+*                            Copyright 2024 Trice Helix                             *
+*                                                                                   *
+* This file is part of crossput and is distributed under the BSD-3-Clause License.  *
+* Please refer to LICENSE.txt for additional information.                           *
+* =================================================================================*/
 
 #include "common.hpp"
 

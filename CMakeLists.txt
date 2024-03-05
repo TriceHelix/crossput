@@ -1,12 +1,12 @@
-# =================================================================================
-#       +----------+
-#       | crossput |
-#       +----------+
-# Copyright 2024 Trice Helix
-# 
-# This file is part of crossput and is distributed under the BSD-3-Clause License.
-# Please refer to LICENSE.txt for additional information.
-# =================================================================================
+# ================================================================================= #
+#                                   +----------+                                    #
+#                                   | crossput |                                    #
+#                                   +----------+                                    #
+#                            Copyright 2024 Trice Helix                             #
+#                                                                                   #
+# This file is part of crossput and is distributed under the BSD-3-Clause License.  #
+# Please refer to LICENSE.txt for additional information.                           #
+# ================================================================================= #
 
 cmake_minimum_required(VERSION 3.27)
 
@@ -66,6 +66,7 @@ set_target_properties(
     PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
+    COMPILE_WARNING_AS_ERROR TRUE
 )
 
 # enable/disable features
@@ -97,6 +98,21 @@ elseif(${LINUX})
     target_sources(crossput PRIVATE "src/impl_linux.cpp")
 else()
     message(FATAL_ERROR "Unsupported target platform.")
+endif()
+
+# compiler-specific details
+if(${MSVC})
+    # enable most warnings
+    target_compile_options(crossput PRIVATE /W4)
+
+    # allow inheritance via dominance
+    target_compile_options(crossput PRIVATE /wd4250)
+else()
+    # enable most warnings
+    target_compile_options(crossput PRIVATE -Wall -Wextra -Wpedantic)
+
+    # allow missing initializer values
+    target_compile_options(crossput PRIVATE -Wno-missing-field-initializers)
 endif()
 
 function(add_demo_executable arg_name arg_source)

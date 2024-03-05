@@ -1,13 +1,12 @@
-/*=================================================================================
-*       +----------+
-*       | crossput |
-*       +----------+
-* Copyright 2024 Trice Helix
-* 
-* This file is part of crossput and is distributed under the BSD-3-Clause License.
-* Please refer to LICENSE.txt for additional information.
-* =================================================================================
-*/
+/*================================================================================= *
+*                                   +----------+                                    *
+*                                   | crossput |                                    *
+*                                   +----------+                                    *
+*                            Copyright 2024 Trice Helix                             *
+*                                                                                   *
+* This file is part of crossput and is distributed under the BSD-3-Clause License.  *
+* Please refer to LICENSE.txt for additional information.                           *
+* =================================================================================*/
 
 #include "common.hpp"
 
@@ -78,53 +77,76 @@ const std::string DEV_INPUT_DIR = "/dev/input";
 const std::regex REGEX_EVENTX_FN("^event[0-9]+$");
 
 
-// Of the sections marked as "A", "B", and "C", only one will be filled with valid data that can be used to identify an input device.
-// Which of the sections to use is indicated by "idm_index".
+constexpr bool input_id_equal(const input_id &left, const input_id &right)
+{
+    return (left.bustype == right.bustype)
+        && (left.vendor == right.vendor)
+        && (left.product == right.product)
+        && (left.version == right.version);
+}
+
+
+constexpr uint64_t input_id_to_uint64(const input_id &value)
+{
+    return (static_cast<uint64_t>(value.bustype) << 48)
+        | (static_cast<uint64_t>(value.vendor) << 32)
+        | (static_cast<uint64_t>(value.product) << 16)
+        | static_cast<uint64_t>(value.version);
+}
+
+
+// Of the sections marked as "a", "b", and "c", only one will be filled with valid data that can be used to identify an input device.
+// Which of the sections to use is indicated by "idm".
 struct LinuxHardwareID
 {
-    // A
-    char unique_id[128];
-
-    // B
-    char phys_location[128];
-    input_id metadata;
-    static_assert(sizeof(input_id) == sizeof(uint64_t), "LinuxHardwareID relies on interpreting input_id as a 64-bit unsigned integer.");
-
-    // C
-    unsigned int eventx;
-
     // indicator for which identification method to use
-    int idm_index;
+    int idm;
+    union
+    {
+        struct
+        {
+            char unique_id[128];
+        } a;
 
+        struct
+        {
+            char phys_location[128];
+            input_id metadata;
+        } b;
+
+        struct
+        {
+            unsigned int eventx;
+        } c;
+    };
+    
 
     inline bool operator==(const LinuxHardwareID &other) const
     {
-        if (idm_index != other.idm_index) { return false; }
+        if (idm != other.idm) { return false; }
 
-        switch (idm_index)
+        switch (idm)
         {
         case 0:
-            return std::strcmp(unique_id, other.unique_id) == 0;
+            return std::strcmp(a.unique_id, other.a.unique_id) == 0;
 
         case 1:
-            return (std::strcmp(phys_location, other.phys_location) == 0)
-                && (*reinterpret_cast<const uint64_t *>(&metadata) == *reinterpret_cast<const uint64_t *>(&other.metadata));
+            return (std::strcmp(b.phys_location, other.b.phys_location) == 0)
+                && input_id_equal(b.metadata, other.b.metadata);
 
         case 2:
-            return eventx == other.eventx;
+            return c.eventx == other.c.eventx;
 
         default:
             return false;
         }
     }
 
-    inline bool operator!=(const LinuxHardwareID &other) const
-    {
-        return !(operator==(other));
-    }
+
+    constexpr ~LinuxHardwareID() {}
 };
 
-constexpr LinuxHardwareID INVALID_LXHWID = {.idm_index = -1};
+constexpr LinuxHardwareID INVALID_LXHWID { .idm = -1 };
 
 
 // LinuxHardwareID from open eventX file
@@ -135,21 +157,21 @@ void GetHWID(LinuxHardwareID &id, const int fd, const unsigned int x)
     int stat1, stat2;
 
     // A (driver-provided UID)
-    id.idm_index = 0;
-    std::memset(id.unique_id, 0, sizeof(id.unique_id));
-    stat1 = ioctl(fd, EVIOCGUNIQ(sizeof(LinuxHardwareID::unique_id) - 1), &id.unique_id);
+    id.idm = 0;
+    std::memset(id.a.unique_id, 0, sizeof(id.a.unique_id));
+    stat1 = ioctl(fd, EVIOCGUNIQ(sizeof(LinuxHardwareID::a.unique_id) - 1), &id.a.unique_id);
     if (stat1 >= 0) { return; }
 
     // B (device info + physical location)
-    id.idm_index = 1;
-    std::memset(id.phys_location, 0, sizeof(id.phys_location));
-    stat1 = ioctl(fd, EVIOCGPHYS(sizeof(LinuxHardwareID::phys_location) - 1), &id.phys_location);
-    stat2 = ioctl(fd, EVIOCGID, &id.metadata);
+    id.idm = 1;
+    std::memset(id.b.phys_location, 0, sizeof(id.b.phys_location));
+    stat1 = ioctl(fd, EVIOCGPHYS(sizeof(LinuxHardwareID::b.phys_location) - 1), &id.b.phys_location);
+    stat2 = ioctl(fd, EVIOCGID, &id.b.metadata);
     if (stat1 >= 0 && stat2 >= 0) { return; }
 
     // C (eventX fallback, weakest identity)
-    id.idm_index = 2;
-    id.eventx = x;
+    id.idm = 2;
+    id.c.eventx = x;
 }
 
 
@@ -159,16 +181,16 @@ struct std::hash<LinuxHardwareID>
 public:
     size_t operator()(const LinuxHardwareID &id) const
     {
-        switch (id.idm_index)
+        switch (id.idm)
         {
         case 0:
-            return fnv1a_strhash(id.unique_id);
+            return fnv1a_strhash(id.a.unique_id);
 
         case 1:
-            return (fnv1a_strhash(id.phys_location) * 23) + static_cast<size_t>(*reinterpret_cast<const uint64_t *>(&id.metadata));
+            return (fnv1a_strhash(id.b.phys_location) * 23) + input_id_to_uint64(id.b.metadata);
 
         case 2:
-            return std::hash<unsigned int>().operator()(id.eventx);
+            return std::hash<unsigned int>().operator()(id.c.eventx);
 
         default:
             return 0;
@@ -627,7 +649,7 @@ namespace crossput
         double inv_delta_p;
 
 
-        AbsValNorm() = default;
+        constexpr AbsValNorm() = default;
 
         AbsValNorm(const input_absinfo &info)
         {
@@ -757,7 +779,7 @@ namespace crossput
         #ifdef CROSSPUT_FEATURE_FORCE
         void HandleFFStatusEvent(const input_event &ev);
 
-        inline void SetGainImpl(const float gain)
+        inline bool SetGainImpl(const float gain)
         {
             gain_ = gain;
             if (supports_gain_)
@@ -768,11 +790,14 @@ namespace crossput
                     .code = FF_GAIN,
                     .value = static_cast<int>(gain * static_cast<float>(0xFFFF))
                 };
-                [[maybe_unused]] const ssize_t ignore = write(file_desc_, &ev, sizeof(input_event));
+
+                return 0 <= write(file_desc_, &ev, sizeof(input_event));
             }
+
+            return false;
         }
 
-        inline void DisableAutocenterImpl()
+        inline bool DisableAutocenterImpl()
         {
             if (supports_autocenter_)
             {
@@ -782,8 +807,11 @@ namespace crossput
                     .code = FF_AUTOCENTER,
                     .value = 0
                 };
-                [[maybe_unused]] const ssize_t ignore = write(file_desc_, &ev, sizeof(input_event));
+
+                return 0 <= write(file_desc_, &ev, sizeof(input_event));
             }
+
+            return false;
         }
         #endif // CROSSPUT_FEATURE_FORCE
     };
@@ -863,10 +891,10 @@ namespace crossput
 
     private:
         TSTV button_data_[NUM_BUTTON_CODES] = {};
-        std::pair<AbsValNorm, AbsValNorm> thumbstick_norms_[NUM_THUMBSTICKS] = {};
-        std::pair<AbsValNorm, AbsValNorm> dpad_norm_ = {};
+        AbsValNorm thumbstick_norms_[NUM_THUMBSTICKS * 2] = {};
         AbsValNorm trigger_norms_[NUM_TRIGGERS] = {};
-        std::pair<float, float> thumbstick_values_[NUM_THUMBSTICKS] = {};
+        float thumbstick_values_[NUM_THUMBSTICKS * 2] = {};
+        std::pair<AbsValNorm, AbsValNorm> dpad_norm_ = {};
 
         // mapping between button -> analog normalizers
         // (for determining whether a button is already recieving analog events)
@@ -1150,7 +1178,7 @@ namespace crossput
 
     // invoke function-like object for every /dev/input/eventX file,
     // returns number of invocations
-    // [handler signature: bool (const int file_descriptor, const char *path_string, const unsigned int x, bool &close_fd)]
+    // [handler signature: bool (const int file_descriptor, const unsigned int x, bool &close_fd)]
     size_t ForeachEventXFile(auto &&handler, const int fd_flags)
     {
         size_t num = 0;
@@ -1162,13 +1190,12 @@ namespace crossput
             const std::string fnstr = entry.path().filename().string();
             if (!std::regex_match(fnstr, REGEX_EVENTX_FN)) { continue; } // not an eventX file
 
-            const std::string pstr = entry.path().string();
-            const int fd = open(pstr.c_str(), fd_flags);
+            const int fd = open(entry.path().c_str(), fd_flags);
             if (fd < 0)
             {
                 if (errno == EPERM)
                 {
-                    throw std::runtime_error(std::format("Access to \"{}\" denied. Is the current user in the \"input\" group?", pstr.c_str()));
+                    throw std::runtime_error(std::format("Access to \"{}\" denied. Is the current user in the \"input\" group?", entry.path().c_str()));
                 }
 
                 continue;
@@ -1177,7 +1204,7 @@ namespace crossput
             bool close_fd;
             char *end = nullptr;
             const unsigned int x = static_cast<unsigned int>(std::strtoul(fnstr.data() + 5, &end, 10)); // parse eventX
-            const bool status = handler(fd, pstr.c_str(), x, close_fd);
+            const bool status = handler(fd, x, close_fd);
             num++;
 
             if (close_fd) { close(fd); }
@@ -1224,36 +1251,28 @@ namespace crossput
 
     constexpr ff_constant_effect TranslateConstantParams(const ConstantForceParams &params, uint16_t &duration)
     {
-        float m;
-        ff_envelope env = TranslateEnvelope(params.envelope, duration);
-
         return ff_constant_effect
         {
             .level = TranslateMagnitude(params.magnitude),
-            .envelope = env
+            .envelope = TranslateEnvelope(params.envelope, duration)
         };
     }
 
 
     constexpr ff_ramp_effect TranslateRampParams(const RampForceParams &params, uint16_t &duration)
     {
-        float m;
-        ff_envelope env = TranslateEnvelope(params.envelope, duration);
-
         return ff_ramp_effect
         {
             .start_level = TranslateMagnitude(params.magnitude_start),
             .end_level = TranslateMagnitude(params.magnitude_end),
-            .envelope = env
+            .envelope = TranslateEnvelope(params.envelope, duration)
         };
     }
 
 
     constexpr ff_periodic_effect TranslatePeriodicParams(const uint16_t waveform, const PeriodicForceParams &params, uint16_t &duration)
     {
-        float m;
-        ff_envelope env = TranslateEnvelope(params.envelope, duration);
-
+        (void)TranslateEnvelope(params.envelope, duration);
         return ff_periodic_effect
         {
             .waveform = waveform,
@@ -1319,7 +1338,7 @@ namespace crossput
         ProtectManagementAPI(CROSSPUT_FUNCTION_STR);
 
         size_t devices_created = 0;
-        const auto dev_analyzer = [&devices_created](const int fd, const char *path_str, const unsigned int x, bool &close_fd) -> bool
+        const auto dev_analyzer = [&devices_created](const int fd, const unsigned int x, bool &close_fd) -> bool
         {
             close_fd = true;
 
@@ -1431,7 +1450,7 @@ namespace crossput
         if (is_connected_) [[unlikely]] { return true; }
 
         unsigned int event_x;
-        const auto analyze_device = [this, &event_x](const int fd, const char *path_str, const unsigned int x, bool &close_fd) -> bool
+        const auto analyze_device = [this, &event_x](const int fd, const unsigned int x, bool &close_fd) -> bool
         {
             close_fd = true;
 
@@ -1493,8 +1512,8 @@ namespace crossput
             supports_autocenter_ = GETBIT_(ff_capabilities, FF_AUTOCENTER);
 
             // apply default force-feedback parameters
-            SetGainImpl(1.0F);
-            DisableAutocenterImpl();
+            (void)SetGainImpl(1.0F);
+            (void)DisableAutocenterImpl();
             #endif // CROSSPUT_FEATURE_FORCE
 
             OnConnected();
@@ -1584,11 +1603,11 @@ namespace crossput
     }
 
 
-    void LinuxDevice::SetGain(const uint32_t motor_index, float gain)
+    void LinuxDevice::SetGain([[maybe_unused]] const uint32_t motor_index, float gain)
     {
         if (is_connected_)
         {
-            SetGainImpl(std::clamp(gain, 0.0F, 1.0F));
+            (void)SetGainImpl(std::clamp(gain, 0.0F, 1.0F));
         }
     }
 
@@ -1839,7 +1858,8 @@ namespace crossput
         {
             if (ev.type == EV_KEY)
             {
-                if (ev.code < 0 || KEYCODE_MAPPING_LEN < ev.code) [[unlikely]] { continue; }
+                static_assert(!std::numeric_limits<decltype(ev.code)>::is_signed);
+                if (KEYCODE_MAPPING_LEN < ev.code) [[unlikely]] { continue; }
 
                 const Key key = keycode_mapping[ev.code];
                 if (IsValidKey(key))
@@ -2017,8 +2037,7 @@ namespace crossput
             #endif // CROSSPUT_FEATURE_CALLBACK
         };
 
-        ThumbstickMod tsmod;
-        tsmod.Clear();
+        ThumbstickMod tsmod = {};
 
         for (const input_event &ev : pending_events_)
         {
@@ -2073,19 +2092,34 @@ namespace crossput
         // apply thumbstick modification
         if (tsmod.has_target)
         {
-            std::pair<float, float> &dest = thumbstick_values_[tsmod.target];
-            const std::pair<AbsValNorm, AbsValNorm> &norm = thumbstick_norms_[tsmod.target];
-            const float x = tsmod.has_x ? NormalizeAbsValue(norm.first, tsmod.x) : dest.first;
-            const float y = tsmod.has_y ? -NormalizeAbsValue(norm.second, tsmod.y) : dest.second; // negate Y
+            [[maybe_unused]] bool do_callback = false; // only used for CROSSPUT_FEATURE_CALLBACK
+            float x, y;
+            const size_t tx = static_cast<size_t>(tsmod.target) * 2;
+            const size_t ty = tx + 1;
+            float &dest_x = thumbstick_values_[tx];
+            float &dest_y = thumbstick_values_[ty];
 
-            if (x != dest.first || y != dest.second)
+            if (tsmod.has_x)
             {
-                dest = {x, y};
-
+                x = NormalizeAbsValue(thumbstick_norms_[tx], tsmod.x);
                 #ifdef CROSSPUT_FEATURE_CALLBACK
-                ThumbstickChanged(tsmod.target, x, y);
+                do_callback |= (x != dest_x);
                 #endif // CROSSPUT_FEATURE_CALLBACK
+                dest_x = x;
             }
+
+            if (tsmod.has_y)
+            {
+                y = -NormalizeAbsValue(thumbstick_norms_[ty], tsmod.y); // negate Y
+                #ifdef CROSSPUT_FEATURE_CALLBACK
+                do_callback |= (y != dest_y);
+                #endif // CROSSPUT_FEATURE_CALLBACK
+                dest_y = y;
+            }
+
+            #ifdef CROSSPUT_FEATURE_CALLBACK
+            if (do_callback) { ThumbstickChanged(tsmod.target, dest_x, dest_y); }
+            #endif // CROSSPUT_FEATURE_CALLBACK
         }
 
         pending_events_.clear();
@@ -2119,10 +2153,13 @@ namespace crossput
             if (!AbsValueFromIoctl(this->file_desc_, code_x, x)) { x = 0.0F; }
             if (!AbsValueFromIoctl(this->file_desc_, code_y, y)) { y = 0.0F; } else { y = -y; } // negate Y
 
-            std::pair<float, float> &dest = this->thumbstick_values_[index];
-            if (x != dest.first || y != dest.second)
+            const size_t tx = static_cast<size_t>(index) * 2;
+            float &dest_x = this->thumbstick_values_[tx];
+            float &dest_y = this->thumbstick_values_[tx + 1];
+            if (x != dest_x || y != dest_y)
             {
-                dest = {x, y};
+                dest_x = x;
+                dest_y = y;
 
                 #ifdef CROSSPUT_FEATURE_CALLBACK
                 ThumbstickChanged(index, x, y);
@@ -2130,7 +2167,7 @@ namespace crossput
             }
         };
 
-        const auto query_trigger = [this, &handle_digital_button, timestamp](const int code, const int trigger_index, const Button b)
+        const auto query_trigger = [this, &handle_digital_button, timestamp](const int code, const Button b)
         {
             input_absinfo info;
             if (ioctl(this->file_desc_, EVIOCGABS(code), &info) >= 0)
@@ -2172,10 +2209,10 @@ namespace crossput
         query_dpad(ABS_HAT0Y, Button::DPAD_UP, Button::DPAD_DOWN);
 
         // triggers (Y is left, X is right)
-        query_trigger(ABS_HAT1Y, 0, Button::L1);
-        query_trigger(ABS_HAT1X, 1, Button::R1);
-        query_trigger(ABS_HAT2Y, 2, Button::L2);
-        query_trigger(ABS_HAT2X, 3, Button::R2);
+        query_trigger(ABS_HAT1Y, Button::L1);
+        query_trigger(ABS_HAT1X, Button::R1);
+        query_trigger(ABS_HAT2Y, Button::L2);
+        query_trigger(ABS_HAT2X, Button::R2);
 
         // thumbsticks
         query_thumbstick(0, ABS_X, ABS_Y);
@@ -2215,10 +2252,10 @@ namespace crossput
 
         // thumbsticks
         #define CREATE_THUMBSTICK_HANDLER(code, norm_dest) if (!AbsValueNormFromIoctl(file_desc_, code, norm_dest)) { norm_dest = {}; }
-        CREATE_THUMBSTICK_HANDLER(ABS_X, thumbstick_norms_[0].first)
-        CREATE_THUMBSTICK_HANDLER(ABS_Y, thumbstick_norms_[0].second)
-        CREATE_THUMBSTICK_HANDLER(ABS_RX, thumbstick_norms_[1].first)
-        CREATE_THUMBSTICK_HANDLER(ABS_RY, thumbstick_norms_[1].second)
+        CREATE_THUMBSTICK_HANDLER(ABS_X, thumbstick_norms_[0])
+        CREATE_THUMBSTICK_HANDLER(ABS_Y, thumbstick_norms_[1])
+        CREATE_THUMBSTICK_HANDLER(ABS_RX, thumbstick_norms_[2])
+        CREATE_THUMBSTICK_HANDLER(ABS_RY, thumbstick_norms_[3])
         #undef CREATE_THUMBSTICK_HANDLER
     }
 
@@ -2284,9 +2321,16 @@ namespace crossput
 
     constexpr void LinuxGamepad::GetThumbstick(const uint32_t index, float &x, float &y) const
     {
-        std::tie(x, y) = (is_connected_ && index < LinuxGamepad::NUM_THUMBSTICKS)
-            ? thumbstick_values_[index]
-            : std::make_pair(0.0F, 0.0F);
+        if (!is_connected_ || index >= LinuxGamepad::NUM_THUMBSTICKS)
+        {
+            x = 0.0F;
+            y = 0.0F;
+            return;
+        }
+
+        const size_t tx = static_cast<size_t>(index) * 2;
+        x = thumbstick_values_[tx];
+        y = thumbstick_values_[tx + 1];
     }
 
 
@@ -2307,6 +2351,7 @@ namespace crossput
             ev.value = 0; // stop
         }
 
+        // allow failure
         [[maybe_unused]] const ssize_t ignore = write(p_device_->file_desc_, &ev, sizeof(input_event));
     }
 

@@ -1,13 +1,12 @@
-/*=================================================================================
-*       +----------+
-*       | crossput |
-*       +----------+
-* Copyright 2024 Trice Helix
-* 
-* This file is part of crossput and is distributed under the BSD-3-Clause License.
-* Please refer to LICENSE.txt for additional information.
-* =================================================================================
-*/
+/*================================================================================= *
+*                                   +----------+                                    *
+*                                   | crossput |                                    *
+*                                   +----------+                                    *
+*                            Copyright 2024 Trice Helix                             *
+*                                                                                   *
+* This file is part of crossput and is distributed under the BSD-3-Clause License.  *
+* Please refer to LICENSE.txt for additional information.                           *
+* =================================================================================*/
 
 #ifndef CROSSPUT_IMPL_COMMON_H
 #define CROSSPUT_IMPL_COMMON_H
@@ -53,22 +52,6 @@ namespace crossput
 
     // all device interfaces, including aggregates
     extern std::unordered_map<ID, BaseInterface *> glob_interfaces;
-
-
-    template <typename T>
-    inline size_t GetDevicesOfType(std::vector<T *> &devices, const DeviceType type, const bool ignore_disconnected)
-    {
-        size_t num = 0;
-        for (const auto &elm : glob_interfaces)
-        {
-            if (elm.second->GetType() == type && (!ignore_disconnected || elm.second->IsConnected()))
-            {
-                devices.push_back(dynamic_cast<T *>(elm.second));
-                num++;
-            }
-        }
-        return num;
-    }
 
 
     constexpr float TimestampDeltaSeconds(const timestamp_t first, const timestamp_t second) noexcept
@@ -228,6 +211,22 @@ namespace crossput
     protected:
         BaseInterface() : id_(ReserveID()) {}
     };
+
+
+    template <typename T>
+    inline size_t GetDevicesOfType(std::vector<T *> &devices, const DeviceType type, const bool ignore_disconnected)
+    {
+        size_t num = 0;
+        for (const auto &elm : glob_interfaces)
+        {
+            if (elm.second->GetType() == type && (!ignore_disconnected || elm.second->IsConnected()))
+            {
+                devices.push_back(dynamic_cast<T *>(elm.second));
+                num++;
+            }
+        }
+        return num;
+    }
 
 
     // implements:
@@ -813,13 +812,16 @@ namespace crossput
     {
     public:
         constexpr uint32_t GetMotorCount() const override final { return 0; }
-        constexpr float GetGain(const uint32_t motor_index) const override final { return 0.0F; }
-        constexpr void SetGain(const uint32_t motor_index, const float gain) override final {}
-        constexpr bool SupportsForce(const uint32_t motor_index, const ForceType type) const override final { return false; }
-        constexpr bool TryGetForce(const ID id, IForce *&p_force) const override final { return false; }
-        constexpr void DestroyForce(const ID id) override final {}
+        constexpr float GetGain([[maybe_unused]] const uint32_t motor_index) const override final { return 0.0F; }
+        constexpr void SetGain([[maybe_unused]] const uint32_t motor_index, [[maybe_unused]] const float gain) override final {}
+        constexpr bool SupportsForce([[maybe_unused]] const uint32_t motor_index, [[maybe_unused]] const ForceType type) const override final { return false; }
+        constexpr bool TryGetForce([[maybe_unused]] const ID id, [[maybe_unused]] IForce *&p_force) const override final { return false; }
+        constexpr void DestroyForce([[maybe_unused]] const ID id) override final {}
 
-        constexpr bool TryCreateForce(const uint32_t motor_index, const ForceType type, IForce *&p_force) override final
+        constexpr bool TryCreateForce(
+            [[maybe_unused]] const uint32_t motor_index,
+            [[maybe_unused]] const ForceType type,
+            [[maybe_unused]] IForce *&p_force) override final
         {
             p_force = nullptr;
             return false;
@@ -998,7 +1000,6 @@ namespace crossput
                 #ifdef CROSSPUT_FEATURE_FORCE
                 // update motor mapping
                 motor_to_member_.clear();
-                uint32_t tc = 0;
                 for (size_t i = 0; i < member_count_; i++)
                 {
                     const uint32_t c = members_[i]->GetMotorCount();
@@ -1011,7 +1012,7 @@ namespace crossput
         }
 
         #ifdef CROSSPUT_FEATURE_FORCE
-        constexpr uint32_t GetMotorCount() const noexcept override final { return is_connected_ ? motor_to_member_.size() : 0; }
+        constexpr uint32_t GetMotorCount() const noexcept override final { return is_connected_ ? static_cast<uint32_t>(motor_to_member_.size()) : 0; }
 
         float GetGain(const uint32_t motor_index) const override final
         {

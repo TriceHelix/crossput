@@ -1,13 +1,12 @@
-/*=================================================================================
-*       +----------+
-*       | crossput |
-*       +----------+
-* Copyright 2024 Trice Helix
-* 
-* This file is part of crossput and is distributed under the BSD-3-Clause License.
-* Please refer to LICENSE.txt for additional information.
-* =================================================================================
-*/
+/*================================================================================= *
+*                                   +----------+                                    *
+*                                   | crossput |                                    *
+*                                   +----------+                                    *
+*                            Copyright 2024 Trice Helix                             *
+*                                                                                   *
+* This file is part of crossput and is distributed under the BSD-3-Clause License.  *
+* Please refer to LICENSE.txt for additional information.                           *
+* =================================================================================*/
 
 #include "common.hpp"
 
@@ -22,8 +21,8 @@ struct WindowsHardwareID
 {
     APP_LOCAL_DEVICE_ID id;
 
-    WindowsHardwareID() = default;
-    WindowsHardwareID(const APP_LOCAL_DEVICE_ID &native_id) : id(native_id) {}
+    constexpr WindowsHardwareID() = default;
+    constexpr WindowsHardwareID(const APP_LOCAL_DEVICE_ID &native_id) : id(native_id) {}
 
     inline bool operator==(const WindowsHardwareID &other) const
     {
@@ -395,7 +394,7 @@ namespace crossput
 
         constexpr uint32_t GetMotorCount() const override final
         {
-            return is_connected_ ? motor_capabilities_.size() : 0;
+            return is_connected_ ? static_cast<uint32_t>(motor_capabilities_.size()) : 0;
         }
 
         constexpr float GetGain(const uint32_t motor_index) const override final
@@ -903,12 +902,12 @@ namespace crossput
         }
 
         constexpr auto devenum_callback = [](
-            _In_ GameInputCallbackToken callback_token,
-            _In_ void * p_context,
-            _In_ IGameInputDevice * p_device,
-            _In_ gdk_timestamp_t timestamp,
-            _In_ GameInputDeviceStatus current_status,
-            _In_ GameInputDeviceStatus previous_status)
+            [[maybe_unused]] _In_ GameInputCallbackToken callback_token,
+            [[maybe_unused]] _In_ void * p_context,
+            [[maybe_unused]] _In_ IGameInputDevice * p_device,
+            [[maybe_unused]] _In_ gdk_timestamp_t timestamp,
+            [[maybe_unused]] _In_ GameInputDeviceStatus current_status,
+            [[maybe_unused]] _In_ GameInputDeviceStatus previous_status)
         {
             // check if interface for device exists
             if (!nat_device_ids.contains(WindowsHardwareID(p_device->GetDeviceInfo()->deviceId)))

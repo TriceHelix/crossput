@@ -39,15 +39,28 @@ if(DEFINED MSDGK_ROOT_DIR)
     list(APPEND search_paths "${MSDGK_ROOT_DIR}/")
 endif()
 
-list(REMOVE_DUPLICATES search_paths)
+# normalize paths
+set(search_paths_normalized "")
+foreach(path ${search_paths})
+    cmake_path(ABSOLUTE_PATH path NORMALIZE)
+    list(APPEND search_paths_normalized ${path})
+endforeach()
+
+# deduplicate search paths
+list(REMOVE_DUPLICATES search_paths_normalized)
+set(search_paths ${search_paths_normalized})
 
 # workaround for CMake's limited regex capabilities
 string(REPEAT [0-9] 6 any_six_digits)
 set(version_regex "^${any_six_digits}$")
 
 foreach(path ${search_paths})
-    # check if directory exists
-    cmake_path(ABSOLUTE_PATH path NORMALIZE)
+    # path must be directory
+    if(NOT (IS_DIRECTORY "${path}"))
+        continue()
+    endif()
+
+    # path must exist
     if(NOT EXISTS "${path}")
         continue()
     endif()
