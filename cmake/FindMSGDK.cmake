@@ -32,7 +32,7 @@ set(search_paths
 )
 
 if(DEFINED ENV{GameDK})
-    list(APPEND "$ENV{GameDK}")
+    list(APPEND search_paths "$ENV{GameDK}")
 endif()
 
 if(DEFINED MSDGK_ROOT_DIR)
