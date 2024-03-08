@@ -202,11 +202,11 @@ namespace crossput
     };
 
     /// @brief Total number of valid cross-platform keys (crossput::Key enum).
-    constexpr size_t NUM_KEY_CODES = 112;
+    inline constexpr size_t NUM_KEY_CODES = 112;
 
     /// @brief Inputs which do not have a cross-platform representation are internally handled using this value.
     ///        To check whether a key is actually valid or not, use IsValidKey().
-    constexpr Key INVALID_KEY = static_cast<Key>(255U);
+    inline constexpr Key INVALID_KEY = static_cast<Key>(255U);
     constexpr bool IsValidKey(const Key key) noexcept { return static_cast<int>(key) < NUM_KEY_CODES; }
 
 
@@ -264,11 +264,11 @@ namespace crossput
     };
 
     /// @brief Total number of valid cross-platform buttons (crossput::Button enum).
-    constexpr size_t NUM_BUTTON_CODES = 16;
+    inline constexpr size_t NUM_BUTTON_CODES = 16;
 
     /// @brief Inputs which do not have a cross-platform representation are internally handled using this value.
     ///        To check whether a button is actually valid or not, use IsValidButton().
-    constexpr Button INVALID_BUTTON = static_cast<Button>(255U);
+    inline constexpr Button INVALID_BUTTON = static_cast<Button>(255U);
     constexpr bool IsValidButton(const Button button) noexcept { return static_cast<int>(button) < NUM_BUTTON_CODES; }
 
 
@@ -364,7 +364,7 @@ namespace crossput
     };
 
     /// @brief Total number of cross-platform force types (crossput::ForceType enum).
-    constexpr size_t NUM_FORCE_TYPES = 12;
+    inline constexpr size_t NUM_FORCE_TYPES = 12;
 
 
     /// @brief Status of a physical force constrolled via the IForce interface.
