@@ -34,42 +34,11 @@
 #define GETBIT_(array, at) (((reinterpret_cast<const unsigned char *>(array)[(at) / 8]) >> ((at) % 8)) & 1)
 
 
-constexpr bool AnyBit(const unsigned char *ptr, const size_t len)
+constexpr bool AnyBit(const unsigned char *const ptr, const size_t len)
 {
+    // likely SIMD optimized with fixed-size array
     for (size_t i = 0; i < len; i++) { if (ptr[i] != 0) { return true; } }
     return false;
-}
-
-
-template <size_t LEN>
-constexpr bool AnyBit(const unsigned char *ptr)
-{
-    if constexpr ((LEN % sizeof(unsigned long long) == 0))
-    {
-        constexpr size_t LEN_ULL = LEN / sizeof(unsigned long long);
-        const unsigned long long *ptr_ull = reinterpret_cast<unsigned long long *>(ptr);
-        for (size_t i = 0; i < LEN_ULL; i++) { if (ptr_ull[i] != 0) { return true; } }
-        return false;
-    }
-    else if constexpr (LEN % sizeof(unsigned int) == 0)
-    {
-        constexpr size_t LEN_UI = LEN / sizeof(unsigned int);
-        const unsigned int *ptr_ui = reinterpret_cast<const unsigned int *>(ptr);
-        for (size_t i = 0; i < LEN_UI; i++) { if (ptr_ui[i] != 0) { return true; } }
-        return false;
-    }
-    else if constexpr (LEN % sizeof(unsigned short) == 0)
-    {
-        constexpr size_t LEN_US = LEN / sizeof(unsigned short);
-        const unsigned short *ptr_us = reinterpret_cast<const unsigned short *>(ptr);
-        for (size_t i = 0; i < LEN_US; i++) { if (ptr_us[i] != 0) { return true; } }
-        return false;
-    }
-    else
-    {
-        for (size_t i = 0; i < LEN; i++) { if (ptr[i] != 0) { return true; } }
-        return false;
-    }
 }
 
 
@@ -1062,7 +1031,7 @@ namespace crossput
 
         // analyze event capabilities
         {
-            if (!(AnyBit<sizeof(ev_capabilities)>(ev_capabilities) && GETBIT_(ev_capabilities, EV_SYN)))
+            if (!(AnyBit(ev_capabilities, sizeof(ev_capabilities)) && GETBIT_(ev_capabilities, EV_SYN)))
             {
                 // must send EV_SYN events (SYN_REPORT is used to separate packets)
                 return DeviceType::UNKNOWN;
