@@ -10,9 +10,10 @@
 
 cmake_minimum_required(VERSION 3.27)
 
+set(CROSSPUT_VERSION 0.2.1)
 project(crossput
+    VERSION ${CROSSPUT_VERSION}
     LANGUAGES CXX
-    VERSION 0.2.0
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -64,6 +65,8 @@ target_sources(crossput PRIVATE "src/impl.cpp")
 set_target_properties(
     crossput
     PROPERTIES
+    VERSION ${CROSSPUT_VERSION}
+    SOVERSION ${CROSSPUT_VERSION}
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
     COMPILE_WARNING_AS_ERROR TRUE
@@ -119,6 +122,7 @@ function(add_demo_executable arg_name arg_source)
     add_executable(${arg_name} "${arg_source}")
     set_target_properties(
         ${arg_name} PROPERTIES
+        VERSION ${CROSSPUT_VERSION}
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED TRUE
     )
