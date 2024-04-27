@@ -10,9 +10,7 @@
 
 #include "common.hpp"
 
-#include <format>
 #include <limits>
-#include <tuple>
 #include <unordered_set>
 #include <GameInput.h>
 

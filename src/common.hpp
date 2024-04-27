@@ -18,11 +18,15 @@
 #include <bitset>
 #include <cassert>
 #include <chrono>
-#include <cstring>
+#include <climits>
 #include <format>
 #include <stdexcept>
 #include <typeindex>
 #include <unordered_map>
+#include <utility>
+
+
+static_assert(CHAR_BIT == 8, "crossput requires characters to have an exact width of 8 bits");
 
 
 #if _MSC_VER && !__INTEL_COMPILER
@@ -82,11 +86,11 @@ namespace crossput
         constexpr void SetTimestamp(const timestamp_t timestamp) { _a = (_a & STATE_BITMASK) | (timestamp & TIMESTAMP_BITMASK); }
 
         constexpr bool State() const { return static_cast<bool>(_a & STATE_BITMASK); }
-        constexpr void SetState(const bool state) { _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * 8 - 1)) | (_a & TIMESTAMP_BITMASK); }
+        constexpr void SetState(const bool state) { _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * CHAR_BIT - 1)) | (_a & TIMESTAMP_BITMASK); }
 
         constexpr void SetTimestampState(const timestamp_t timestamp, const bool state)
         {
-            _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * 8 - 1))
+            _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * CHAR_BIT - 1))
                 | (timestamp & TIMESTAMP_BITMASK);
         }
 
@@ -160,7 +164,7 @@ namespace crossput
         }
 
     private:
-        static constexpr timestamp_t STATE_BITMASK = static_cast<timestamp_t>(1) << (sizeof(timestamp_t) * 8 - 1);
+        static constexpr timestamp_t STATE_BITMASK = static_cast<timestamp_t>(1) << (sizeof(timestamp_t) * CHAR_BIT - 1);
         static constexpr timestamp_t TIMESTAMP_BITMASK = ~STATE_BITMASK;
     };
 
