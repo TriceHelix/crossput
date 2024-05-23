@@ -301,13 +301,13 @@ namespace crossput
             using FuncT = std::function<void (const TDevice *const , const TData...)>;
         };
 
-        struct _StatusCallback : _EventCallbackBase<IDevice, DeviceStatusChange> { constexpr static unsigned short CTYPEID = 1; };
-        struct _MouseMoveCallback : _EventCallbackBase<IMouse, int64_t, int64_t, int64_t, int64_t> { constexpr static unsigned short CTYPEID = 2; };
-        struct _MouseScrollCallback : _EventCallbackBase<IMouse, int64_t, int64_t, int64_t, int64_t> { constexpr static unsigned short CTYPEID = 3; };
-        struct _MouseButtonCallback : _EventCallbackBase<IMouse, uint32_t, float, bool> { constexpr static unsigned short CTYPEID = 4; };
-        struct _KeyboardKeyCallback : _EventCallbackBase<IKeyboard, Key, float, bool> { constexpr static unsigned short CTYPEID = 5; };
-        struct _GamepadButtonCallback : _EventCallbackBase<IGamepad, Button, float, bool> { constexpr static unsigned short CTYPEID = 6; };
-        struct _GamepadThumbstickCallback : _EventCallbackBase<IGamepad, uint32_t, float, float> { constexpr static unsigned short CTYPEID = 7; };
+        struct _StatusCallback : _EventCallbackBase<IDevice, DeviceStatusChange> { static constexpr unsigned short CTYPEID = 1; };
+        struct _MouseMoveCallback : _EventCallbackBase<IMouse, int64_t, int64_t, int64_t, int64_t> { static constexpr unsigned short CTYPEID = 2; };
+        struct _MouseScrollCallback : _EventCallbackBase<IMouse, int64_t, int64_t, int64_t, int64_t> { static constexpr unsigned short CTYPEID = 3; };
+        struct _MouseButtonCallback : _EventCallbackBase<IMouse, uint32_t, float, bool> { static constexpr unsigned short CTYPEID = 4; };
+        struct _KeyboardKeyCallback : _EventCallbackBase<IKeyboard, Key, float, bool> { static constexpr unsigned short CTYPEID = 5; };
+        struct _GamepadButtonCallback : _EventCallbackBase<IGamepad, Button, float, bool> { static constexpr unsigned short CTYPEID = 6; };
+        struct _GamepadThumbstickCallback : _EventCallbackBase<IGamepad, uint32_t, float, float> { static constexpr unsigned short CTYPEID = 7; };
     }
 
     using StatusCallback = impl::_StatusCallback::FuncT;
