@@ -597,7 +597,7 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_AGGREGATE
 
     protected:
-        IDevice() = default;
+        IDevice() noexcept = default;
         virtual ~IDevice() = default;
     };
 
@@ -704,7 +704,7 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_CALLBACK
 
     protected:
-        IMouse() = default;
+        IMouse() noexcept = default;
         virtual ~IMouse() = default;
     };
 
@@ -761,7 +761,7 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_CALLBACK
 
     protected:
-        IKeyboard() = default;
+        IKeyboard() noexcept = default;
         virtual ~IKeyboard() = default;
     };
 
@@ -839,7 +839,7 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_CALLBACK
 
     protected:
-        IGamepad() = default;
+        IGamepad() noexcept = default;
         virtual ~IGamepad() = default;
     };
 
@@ -871,11 +871,11 @@ namespace crossput
         /// @return Index of the motor on the target device that is used to physically apply the force.
         ///         Some devices/platforms do not distinguish between motors, in which case 0 is returned by all forces.
         ///         Forces created via aggregates will likely return a different value than the one specified during creation.
-        virtual uint32_t GetMotorIndex() const noexcept = 0;
+        virtual uint32_t GetMotorIndex() const = 0;
 
         /// @return Access to the parameters of the force.
         ///         After modifying any of the values, call WriteParams() to apply all changes.
-        virtual ForceParams &Params() = 0;
+        virtual ForceParams &Params() noexcept = 0;
 
         /// @brief Upload the current force parameters to the hardware.
         ///        Will always fail if the force has been orphaned or the type set within the parameters has changed.
@@ -894,7 +894,7 @@ namespace crossput
         inline void Stop() { SetActive(false); }
 
     protected:
-        IForce() = default;
+        IForce() noexcept = default;
         virtual ~IForce() = default;
     };
     #endif // CROSSPUT_FEATURE_FORCE
@@ -1089,7 +1089,7 @@ private:
 
 public:
     template <typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) const
+    constexpr auto parse(ParseContext &ctx) const noexcept
     {
         return formatter_type().parse(ctx);
     }

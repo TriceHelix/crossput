@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cmath>
 #include <concepts>
+#include <cstring>
 #include <numeric>
 #include <unordered_set>
 
@@ -584,40 +585,40 @@ namespace crossput
     }
 
 
-    constexpr void AggregateMouse::GetPosition(int64_t &x, int64_t &y) const
+    void AggregateMouse::GetPosition(int64_t &x, int64_t &y) const
     {
         if (!is_connected_) { return; }
         x = data_.x;
         y = data_.y;
     }
 
-    constexpr void AggregateMouse::GetDelta(int64_t &x, int64_t &y) const
+    void AggregateMouse::GetDelta(int64_t &x, int64_t &y) const
     {
         if (!is_connected_) { return; }
         x = data_.dx;
         y = data_.dy;
     }
 
-    constexpr void AggregateMouse::GetScroll(int64_t &x, int64_t &y) const
+    void AggregateMouse::GetScroll(int64_t &x, int64_t &y) const
     {
         if (!is_connected_) { return; }
         x = data_.sx;
         y = data_.sy;
     }
 
-    constexpr void AggregateMouse::GetScrollDelta(int64_t &x, int64_t &y) const
+    void AggregateMouse::GetScrollDelta(int64_t &x, int64_t &y) const
     {
         if (!is_connected_) { return; }
         x = data_.sdx;
         y = data_.sdy;
     }
 
-    constexpr uint32_t AggregateMouse::GetButtonCount() const
+    uint32_t AggregateMouse::GetButtonCount() const
     {
         return is_connected_ ? button_count_ : 0;
     }
 
-    constexpr void AggregateMouse::SetButtonThreshold(const uint32_t index, float threshold)
+    void AggregateMouse::SetButtonThreshold(const uint32_t index, float threshold)
     {
         if (index < button_count_)
         {
@@ -625,27 +626,27 @@ namespace crossput
         }
     }
 
-    constexpr void AggregateMouse::SetGlobalThreshold(float threshold)
+    void AggregateMouse::SetGlobalThreshold(float threshold)
     {
         threshold = std::clamp(threshold, 0.0F, 1.0F);
         for (unsigned int i = 0; i < button_count_; i++) { button_data_[i].SetThreshold(threshold); }
     }
 
-    constexpr float AggregateMouse::GetButtonThreshold(const uint32_t index) const
+    float AggregateMouse::GetButtonThreshold(const uint32_t index) const
     {
         return index < button_count_
             ? button_data_[index].Threshold()
             : 0.0F;
     }
 
-    constexpr float AggregateMouse::GetButtonValue(const uint32_t index) const
+    float AggregateMouse::GetButtonValue(const uint32_t index) const
     {
         return (is_connected_ && index < button_count_)
             ? button_data_[index].Value()
             : 0.0F;
     }
 
-    constexpr bool AggregateMouse::GetButtonState(const uint32_t index, float &time) const
+    bool AggregateMouse::GetButtonState(const uint32_t index, float &time) const
     {
         if (is_connected_ && index < button_count_)
         {
@@ -702,12 +703,12 @@ namespace crossput
     }
 
 
-    constexpr uint32_t AggregateKeyboard::GetNumKeysPressed() const
+    uint32_t AggregateKeyboard::GetNumKeysPressed() const
     {
         return is_connected_ ? num_keys_pressed_ : 0;
     }
 
-    constexpr void AggregateKeyboard::SetKeyThreshold(const Key key, float threshold)
+    void AggregateKeyboard::SetKeyThreshold(const Key key, float threshold)
     {
         if (IsValidKey(key))
         {
@@ -715,27 +716,27 @@ namespace crossput
         }
     }
 
-    constexpr void AggregateKeyboard::SetGlobalThreshold(float threshold)
+    void AggregateKeyboard::SetGlobalThreshold(float threshold)
     {
         threshold = std::clamp(threshold, 0.0F, 1.0F);
         for (unsigned int i = 0; i < NUM_KEY_CODES; i++) { key_data_[i].SetThreshold(threshold); }
     }
 
-    constexpr float AggregateKeyboard::GetKeyThreshold(const Key key) const
+    float AggregateKeyboard::GetKeyThreshold(const Key key) const
     {
         return IsValidKey(key)
             ? key_data_[static_cast<int>(key)].Threshold()
             : 0.0F;
     }
 
-    constexpr float AggregateKeyboard::GetKeyValue(const Key key) const
+    float AggregateKeyboard::GetKeyValue(const Key key) const
     {
         return (is_connected_ && IsValidKey(key))
             ? key_data_[static_cast<int>(key)].Value()
             : 0.0F;
     }
 
-    constexpr bool AggregateKeyboard::GetKeyState(const Key key, float &time) const
+    bool AggregateKeyboard::GetKeyState(const Key key, float &time) const
     {
         if (is_connected_ && IsValidKey(key))
         {
@@ -825,7 +826,7 @@ namespace crossput
     }
 
 
-    constexpr void AggregateGamepad::SetButtonThreshold(const Button button, float threshold)
+    void AggregateGamepad::SetButtonThreshold(const Button button, float threshold)
     {
         if (IsValidButton(button))
         {
@@ -833,27 +834,27 @@ namespace crossput
         }
     }
 
-    constexpr void AggregateGamepad::SetGlobalThreshold(float threshold)
+    void AggregateGamepad::SetGlobalThreshold(float threshold)
     {
         threshold = std::clamp(threshold, 0.0F, 1.0F);
         for (unsigned int i = 0; i < NUM_BUTTON_CODES; i++) { button_data_[i].SetThreshold(threshold); }
     }
 
-    constexpr float AggregateGamepad::GetButtonThreshold(const Button button) const
+    float AggregateGamepad::GetButtonThreshold(const Button button) const
     {
         return IsValidButton(button)
             ? button_data_[static_cast<int>(button)].Threshold()
             : 0.0F;
     }
 
-    constexpr float AggregateGamepad::GetButtonValue(const Button button) const
+    float AggregateGamepad::GetButtonValue(const Button button) const
     {
         return (is_connected_ && IsValidButton(button))
             ? button_data_[static_cast<int>(button)].Value()
             : 0.0F;
     }
 
-    constexpr bool AggregateGamepad::GetButtonState(const Button button, float &time) const
+    bool AggregateGamepad::GetButtonState(const Button button, float &time) const
     {
         if (is_connected_ && IsValidButton(button))
         {
@@ -868,12 +869,12 @@ namespace crossput
         }
     }
 
-    constexpr uint32_t AggregateGamepad::GetThumbstickCount() const
+    uint32_t AggregateGamepad::GetThumbstickCount() const
     {
         return is_connected_ ? thumbstick_count_ : 0;
     }
 
-    constexpr void AggregateGamepad::GetThumbstick(const uint32_t index, float &x, float &y) const
+    void AggregateGamepad::GetThumbstick(const uint32_t index, float &x, float &y) const
     {
         std::tie(x, y) = (is_connected_ && index < thumbstick_count_)
             ? thumbstick_values_[index]

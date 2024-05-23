@@ -33,7 +33,7 @@
 #define GETBIT_(array, at) (((reinterpret_cast<const unsigned char *>(array)[(at) / 8]) >> ((at) % 8)) & 1)
 
 
-constexpr bool AnyBit(const unsigned char *const ptr, const size_t len)
+constexpr bool AnyBit(const unsigned char *const ptr, const size_t len) noexcept
 {
     // likely SIMD optimized with fixed-size array
     for (size_t i = 0; i < len; i++) { if (ptr[i] != 0) { return true; } }
@@ -45,7 +45,7 @@ const std::string DEV_INPUT_DIR = "/dev/input";
 const std::regex REGEX_EVENTX_FN("^event[0-9]+$");
 
 
-constexpr bool input_id_equal(const input_id &left, const input_id &right)
+constexpr bool input_id_equal(const input_id &left, const input_id &right) noexcept
 {
     return (left.bustype == right.bustype)
         && (left.vendor == right.vendor)
@@ -54,7 +54,7 @@ constexpr bool input_id_equal(const input_id &left, const input_id &right)
 }
 
 
-constexpr uint64_t input_id_to_uint64(const input_id &value)
+constexpr uint64_t input_id_to_uint64(const input_id &value) noexcept
 {
     return (static_cast<uint64_t>(value.bustype) << 48)
         | (static_cast<uint64_t>(value.vendor) << 32)
@@ -602,7 +602,7 @@ namespace crossput
     }
 
 
-    constexpr timestamp_t GetEventTimestamp(const input_event &ev)
+    constexpr timestamp_t GetEventTimestamp(const input_event &ev) noexcept
     {
         return (static_cast<timestamp_t>(ev.input_event_sec) * static_cast<timestamp_t>(1000000)) + static_cast<timestamp_t>(ev.input_event_usec);
     }
@@ -617,7 +617,7 @@ namespace crossput
         double inv_delta_p;
 
 
-        constexpr AbsValNorm() = default;
+        constexpr AbsValNorm() noexcept = default;
 
         AbsValNorm(const input_absinfo &info)
         {
@@ -638,7 +638,7 @@ namespace crossput
     }
 
 
-    constexpr float NormalizeAbsValue(const AbsValNorm &norm, int32_t raw_value)
+    constexpr float NormalizeAbsValue(const AbsValNorm &norm, int32_t raw_value) noexcept
     {
         raw_value = std::clamp(raw_value, norm.min, norm.max);
         return raw_value < 0
@@ -646,7 +646,7 @@ namespace crossput
             : std::clamp(static_cast<float>(static_cast<double>(raw_value - std::max(static_cast<int32_t>(0), norm.min)) * norm.inv_delta_p), 0.0F, 1.0F);
     }
 
-    constexpr float NormalizeAbsValue(const input_absinfo &info)
+    constexpr float NormalizeAbsValue(const input_absinfo &info) noexcept
     {
         const int32_t raw_value = std::clamp(info.value, info.minimum, info.maximum);
 
@@ -698,7 +698,7 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_FORCE
 
     public:
-        constexpr const LinuxHardwareID &GetHardwareID() { return hardware_id_; }
+        constexpr const LinuxHardwareID &GetHardwareID() noexcept { return hardware_id_; }
         constexpr bool IsAggregate() const noexcept override final { return false; }
 
         std::string GetDisplayName() const override final;
@@ -741,8 +741,8 @@ namespace crossput
         bool TryConnect();
         void Disconnect();
 
-        constexpr virtual void OnConnected() {}
-        constexpr virtual void OnDisconnected() {}
+        virtual constexpr void OnConnected() {}
+        virtual constexpr void OnDisconnected() {}
 
         #ifdef CROSSPUT_FEATURE_FORCE
         void HandleFFStatusEvent(const input_event &ev);
@@ -1184,14 +1184,14 @@ namespace crossput
 
 
     #ifdef CROSSPUT_FEATURE_FORCE
-    constexpr int16_t TranslateMagnitude(const float magnitude)
+    constexpr int16_t TranslateMagnitude(const float magnitude) noexcept
     {
         constexpr float M_LIMIT = static_cast<float>(std::numeric_limits<int16_t>::max()) / 1E3F;
         return static_cast<int16_t>(std::clamp(magnitude * 1E3F, -M_LIMIT, M_LIMIT));
     }
 
 
-    constexpr ff_envelope TranslateEnvelope(const ForceEnvelope &envelope, uint16_t &duration)
+    constexpr ff_envelope TranslateEnvelope(const ForceEnvelope &envelope, uint16_t &duration) noexcept
     {
         // when the sum of times exceeds MAX_TIME, all times are scaled back into the valid range
         const float m = 1.0F / std::max(1.0F, (std::max(0.0F, envelope.attack_time) + std::max(0.0F, envelope.sustain_time) + std::max(0.0F, envelope.release_time)) * (1.0F / ForceEnvelope::MAX_TIME));
@@ -1207,7 +1207,7 @@ namespace crossput
     }
 
 
-    constexpr ff_rumble_effect TranslateRumbleParams(const RumbleForceParams &params)
+    constexpr ff_rumble_effect TranslateRumbleParams(const RumbleForceParams &params) noexcept
     {
         return ff_rumble_effect
         {
@@ -1217,7 +1217,7 @@ namespace crossput
     }
 
 
-    constexpr ff_constant_effect TranslateConstantParams(const ConstantForceParams &params, uint16_t &duration)
+    constexpr ff_constant_effect TranslateConstantParams(const ConstantForceParams &params, uint16_t &duration) noexcept
     {
         return ff_constant_effect
         {
@@ -1227,7 +1227,7 @@ namespace crossput
     }
 
 
-    constexpr ff_ramp_effect TranslateRampParams(const RampForceParams &params, uint16_t &duration)
+    constexpr ff_ramp_effect TranslateRampParams(const RampForceParams &params, uint16_t &duration) noexcept
     {
         return ff_ramp_effect
         {
@@ -1238,7 +1238,7 @@ namespace crossput
     }
 
 
-    constexpr ff_periodic_effect TranslatePeriodicParams(const uint16_t waveform, const PeriodicForceParams &params, uint16_t &duration)
+    constexpr ff_periodic_effect TranslatePeriodicParams(const uint16_t waveform, const PeriodicForceParams &params, uint16_t &duration) noexcept
     {
         (void)TranslateEnvelope(params.envelope, duration);
         return ff_periodic_effect
@@ -1254,7 +1254,7 @@ namespace crossput
     }
 
 
-    constexpr ff_condition_effect TranslateConditionParams(const ConditionForceParams &params)
+    constexpr ff_condition_effect TranslateConditionParams(const ConditionForceParams &params) noexcept
     {
         return ff_condition_effect
         {
@@ -1268,7 +1268,7 @@ namespace crossput
     }
 
 
-    constexpr ff_effect TranslateForceParams(const ForceParams &params)
+    constexpr ff_effect TranslateForceParams(const ForceParams &params) noexcept
     {
         const int type_index = static_cast<int>(params.type);
 
@@ -1941,14 +1941,14 @@ namespace crossput
             int x, y;
             bool has_target, has_x, has_y;
 
-            constexpr void Clear()
+            constexpr void Clear() noexcept
             {
                 has_target = false;
                 has_x = false;
                 has_y = false;
             }
 
-            constexpr void SetX(const uint32_t index, const float value)
+            constexpr void SetX(const uint32_t index, const float value) noexcept
             {
                 if (has_target && target != index) { Clear(); } // failsafe
 
@@ -1961,7 +1961,7 @@ namespace crossput
                 }
             }
 
-            constexpr void SetY(const uint32_t index, const float value)
+            constexpr void SetY(const uint32_t index, const float value) noexcept
             {
                 if (has_target && target != index) { Clear(); } // failsafe
 

@@ -19,17 +19,12 @@ struct WindowsHardwareID
 {
     APP_LOCAL_DEVICE_ID id;
 
-    constexpr WindowsHardwareID() = default;
-    constexpr WindowsHardwareID(const APP_LOCAL_DEVICE_ID &native_id) : id(native_id) {}
+    constexpr WindowsHardwareID() noexcept = default;
+    constexpr WindowsHardwareID(const APP_LOCAL_DEVICE_ID &native_id) noexcept : id(native_id) {}
 
     inline bool operator==(const WindowsHardwareID &other) const
     {
         return std::memcmp(id.value, other.id.value, APP_LOCAL_DEVICE_ID_SIZE) == 0;
-    }
-
-    inline bool operator!=(const WindowsHardwareID &other) const
-    {
-        return !(operator==(other));
     }
 };
 
@@ -376,13 +371,13 @@ namespace crossput
         #endif // CROSSPUT_FEATURE_FORCE
 
     public:
-        constexpr const WindowsHardwareID &GetHardwareID() { return hardware_id_; }
+        constexpr const WindowsHardwareID &GetHardwareID() const noexcept { return hardware_id_; }
 
         std::string GetDisplayName() const override final;
         void Update() override final;
 
         #ifdef CROSSPUT_FEATURE_FORCE
-        constexpr bool SupportsForce(const uint32_t motor_index, const ForceType type) const override final
+        constexpr bool SupportsForce(const uint32_t motor_index, const ForceType type) const noexcept override final
         {
             // different motors have different capabilities
             return is_connected_
@@ -390,12 +385,12 @@ namespace crossput
                 && motor_capabilities_[motor_index][static_cast<int>(type)];
         }
 
-        constexpr uint32_t GetMotorCount() const override final
+        constexpr uint32_t GetMotorCount() const noexcept override final
         {
             return is_connected_ ? static_cast<uint32_t>(motor_capabilities_.size()) : 0;
         }
 
-        constexpr float GetGain(const uint32_t motor_index) const override final
+        constexpr float GetGain(const uint32_t motor_index) const noexcept override final
         {
             return (is_connected_ && motor_index < motor_gains_.size())
                 ? motor_gains_[motor_index]
@@ -422,10 +417,10 @@ namespace crossput
             hardware_id_(WindowsHardwareID(dev_id))
             {}
 
-        virtual GameInputKind GetQueryInputKind() = 0;
+        virtual GameInputKind GetQueryInputKind() const = 0;
 
         // runs before any input is processed in Update(), after it is ensured the device is connected
-        constexpr virtual void PreInputHandling() {}
+        virtual constexpr void PreInputHandling() {}
 
         // device-specific handler for individual input readings provided by the base update implementation
         // when false is returned, no more readings are processed and the device update will be cancelled
@@ -444,8 +439,8 @@ namespace crossput
         bool TryConnect();
         void Disconnect();
 
-        constexpr virtual void OnConnected() {}
-        constexpr virtual void OnDisconnected() {}
+        virtual constexpr void OnConnected() {}
+        virtual constexpr void OnDisconnected() {}
     };
 
 
@@ -480,19 +475,19 @@ namespace crossput
     public:
         WindowsMouse(const APP_LOCAL_DEVICE_ID &dev_id) : WindowsDevice(dev_id) {}
 
-        constexpr void GetPosition(int64_t &x, int64_t &y) const override;
-        constexpr void GetDelta(int64_t &x, int64_t &y) const override;
-        constexpr void GetScroll(int64_t &x, int64_t &y) const override;
-        constexpr void GetScrollDelta(int64_t &x, int64_t &y) const override;
-        constexpr uint32_t GetButtonCount() const override;
-        constexpr void SetButtonThreshold(const uint32_t index, float threshold) override;
-        constexpr void SetGlobalThreshold(float threshold) override;
-        constexpr float GetButtonThreshold(const uint32_t index) const override;
-        constexpr float GetButtonValue(const uint32_t index) const override;
-        constexpr bool GetButtonState(const uint32_t index, float &time) const override;
+        constexpr void GetPosition(int64_t &x, int64_t &y) const noexcept override;
+        constexpr void GetDelta(int64_t &x, int64_t &y) const noexcept override;
+        constexpr void GetScroll(int64_t &x, int64_t &y) const noexcept override;
+        constexpr void GetScrollDelta(int64_t &x, int64_t &y) const noexcept override;
+        constexpr uint32_t GetButtonCount() const noexcept override;
+        constexpr void SetButtonThreshold(const uint32_t index, float threshold) noexcept override;
+        constexpr void SetGlobalThreshold(float threshold) noexcept override;
+        constexpr float GetButtonThreshold(const uint32_t index) const noexcept override;
+        constexpr float GetButtonValue(const uint32_t index) const noexcept override;
+        constexpr bool GetButtonState(const uint32_t index, float &time) const noexcept override;
 
     protected:
-        constexpr GameInputKind GetQueryInputKind() { return Q_INPUT_KIND_MOUSE; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_MOUSE; }
         void PreInputHandling() override;
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnDisconnected() override;
@@ -522,7 +517,7 @@ namespace crossput
         constexpr bool GetKeyState(const Key key, float &time) const override;
 
     private:
-        constexpr GameInputKind GetQueryInputKind() { return Q_INPUT_KIND_KEYBOARD; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_KEYBOARD; }
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnConnected() override;
         void OnDisconnected() override;
@@ -554,7 +549,7 @@ namespace crossput
         constexpr void GetThumbstick(const uint32_t index, float &x, float &y) const override;
 
     private:
-        constexpr GameInputKind GetQueryInputKind() { return Q_INPUT_KIND_GAMEPAD; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_GAMEPAD; }
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnDisconnected() override;
 
@@ -725,7 +720,7 @@ namespace crossput
     
 
     #ifdef CROSSPUT_FEATURE_FORCE
-    constexpr GameInputForceFeedbackEnvelope TranslateEnvelope(const ForceEnvelope &envelope)
+    constexpr GameInputForceFeedbackEnvelope TranslateEnvelope(const ForceEnvelope &envelope) noexcept
     {
         // when the sum of times exceeds MAX_TIME, all times are scaled back into the valid range
         const float m = 1.0F / std::max(1.0F, (std::max(0.0F, envelope.attack_time) + std::max(0.0F, envelope.sustain_time) + std::max(0.0F, envelope.release_time)) * (1.0F / ForceEnvelope::MAX_TIME));
@@ -748,13 +743,13 @@ namespace crossput
     }
 
 
-    constexpr GameInputForceFeedbackMagnitude TranslateMagnitude(const float m)
+    constexpr GameInputForceFeedbackMagnitude TranslateMagnitude(const float m) noexcept
     {
         return { m, m, m, m, m, m, m };
     }
 
 
-    constexpr GameInputRumbleParams TranslateRumbleParams(const RumbleForceParams &params, const float gain)
+    constexpr GameInputRumbleParams TranslateRumbleParams(const RumbleForceParams &params, const float gain) noexcept
     {
         return GameInputRumbleParams
         {
@@ -766,7 +761,7 @@ namespace crossput
     }
 
 
-    constexpr GameInputForceFeedbackConstantParams TranslateConstantParams(const ConstantForceParams &params)
+    constexpr GameInputForceFeedbackConstantParams TranslateConstantParams(const ConstantForceParams &params) noexcept
     {
         return GameInputForceFeedbackConstantParams
         {
@@ -776,7 +771,7 @@ namespace crossput
     }
 
 
-    constexpr GameInputForceFeedbackRampParams TranslateRampParams(const RampForceParams &params)
+    constexpr GameInputForceFeedbackRampParams TranslateRampParams(const RampForceParams &params) noexcept
     {
         return GameInputForceFeedbackRampParams
         {
@@ -787,7 +782,7 @@ namespace crossput
     }
 
 
-    constexpr GameInputForceFeedbackPeriodicParams TranslatePeriodicParams(const PeriodicForceParams &params)
+    constexpr GameInputForceFeedbackPeriodicParams TranslatePeriodicParams(const PeriodicForceParams &params) noexcept
     {
         return GameInputForceFeedbackPeriodicParams
         {
@@ -800,7 +795,7 @@ namespace crossput
     }
 
 
-    constexpr GameInputForceFeedbackConditionParams TranslateConditionParams(const ConditionForceParams &params)
+    constexpr GameInputForceFeedbackConditionParams TranslateConditionParams(const ConditionForceParams &params) noexcept
     {
         return GameInputForceFeedbackConditionParams
         {
@@ -1245,40 +1240,40 @@ namespace crossput
     }
 
 
-    constexpr void WindowsMouse::GetPosition(int64_t &x, int64_t &y) const
+    constexpr void WindowsMouse::GetPosition(int64_t &x, int64_t &y) const noexcept
     {
         if (!is_connected_) { return; }
         x = data_.x;
         y = data_.y;
     }
 
-    constexpr void WindowsMouse::GetDelta(int64_t &x, int64_t &y) const
+    constexpr void WindowsMouse::GetDelta(int64_t &x, int64_t &y) const noexcept
     {
         if (!is_connected_) { return; }
         x = data_.dx;
         y = data_.dy;
     }
 
-    constexpr void WindowsMouse::GetScroll(int64_t &x, int64_t &y) const
+    constexpr void WindowsMouse::GetScroll(int64_t &x, int64_t &y) const noexcept
     {
         if (!is_connected_) { return; }
         x = data_.sx;
         y = data_.sy;
     }
 
-    constexpr void WindowsMouse::GetScrollDelta(int64_t &x, int64_t &y) const
+    constexpr void WindowsMouse::GetScrollDelta(int64_t &x, int64_t &y) const noexcept
     {
         if (!is_connected_) { return; }
         x = data_.sdx;
         y = data_.sdy;
     }
 
-    constexpr uint32_t WindowsMouse::GetButtonCount() const
+    constexpr uint32_t WindowsMouse::GetButtonCount() const noexcept
     {
         return is_connected_ ? WindowsMouse::NUM_BUTTONS : 0;
     }
 
-    constexpr void WindowsMouse::SetButtonThreshold(const uint32_t index, float threshold)
+    constexpr void WindowsMouse::SetButtonThreshold(const uint32_t index, float threshold) noexcept
     {
         if (index < WindowsMouse::NUM_BUTTONS)
         {
@@ -1286,27 +1281,27 @@ namespace crossput
         }
     }
 
-    constexpr void WindowsMouse::SetGlobalThreshold(float threshold)
+    constexpr void WindowsMouse::SetGlobalThreshold(float threshold) noexcept
     {
         threshold = std::clamp(threshold, 0.0F, 1.0F);
         for (unsigned int i = 0; i < WindowsMouse::NUM_BUTTONS; i++) { button_data_[i].SetThreshold(threshold); }
     }
 
-    constexpr float WindowsMouse::GetButtonThreshold(const uint32_t index) const
+    constexpr float WindowsMouse::GetButtonThreshold(const uint32_t index) const noexcept
     {
         return index < WindowsMouse::NUM_BUTTONS
             ? button_data_[index].Threshold()
             : 0.0F;
     }
 
-    constexpr float WindowsMouse::GetButtonValue(const uint32_t index) const
+    constexpr float WindowsMouse::GetButtonValue(const uint32_t index) const noexcept
     {
         return (is_connected_ && index < WindowsMouse::NUM_BUTTONS)
             ? button_data_[index].Value()
             : 0.0F;
     }
 
-    constexpr bool WindowsMouse::GetButtonState(const uint32_t index, float &time) const
+    constexpr bool WindowsMouse::GetButtonState(const uint32_t index, float &time) const noexcept
     {
         if (is_connected_ && index < WindowsMouse::NUM_BUTTONS)
         {

@@ -82,27 +82,27 @@ namespace crossput
         float _b;
         float _c;
 
-        constexpr timestamp_t Timestamp() const { return _a & TIMESTAMP_BITMASK; }
-        constexpr void SetTimestamp(const timestamp_t timestamp) { _a = (_a & STATE_BITMASK) | (timestamp & TIMESTAMP_BITMASK); }
+        constexpr timestamp_t Timestamp() const noexcept { return _a & TIMESTAMP_BITMASK; }
+        constexpr void SetTimestamp(const timestamp_t timestamp) noexcept { _a = (_a & STATE_BITMASK) | (timestamp & TIMESTAMP_BITMASK); }
 
-        constexpr bool State() const { return static_cast<bool>(_a & STATE_BITMASK); }
-        constexpr void SetState(const bool state) { _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * CHAR_BIT - 1)) | (_a & TIMESTAMP_BITMASK); }
+        constexpr bool State() const noexcept { return static_cast<bool>(_a & STATE_BITMASK); }
+        constexpr void SetState(const bool state) noexcept { _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * CHAR_BIT - 1)) | (_a & TIMESTAMP_BITMASK); }
 
-        constexpr void SetTimestampState(const timestamp_t timestamp, const bool state)
+        constexpr void SetTimestampState(const timestamp_t timestamp, const bool state) noexcept
         {
             _a = (static_cast<timestamp_t>(state) << (sizeof(timestamp_t) * CHAR_BIT - 1))
                 | (timestamp & TIMESTAMP_BITMASK);
         }
 
-        constexpr float Threshold() const { return _b; }
-        constexpr void SetThreshold(const float threshold) { _b = threshold; }
+        constexpr float Threshold() const noexcept { return _b; }
+        constexpr void SetThreshold(const float threshold) noexcept { _b = threshold; }
 
-        constexpr float Value() const { return _c; }
-        constexpr void SetValue(const float value) { _c = value; }
+        constexpr float Value() const noexcept { return _c; }
+        constexpr void SetValue(const float value) noexcept { _c = value; }
 
         
         // returns true if underlying values were actually modified
-        [[nodiscard]] constexpr bool Modify(const float new_value, const timestamp_t ts, bool &new_state)
+        [[nodiscard]] constexpr bool Modify(const float new_value, const timestamp_t ts, bool &new_state) noexcept
         {
             const bool old_state = State();
             new_state = AnalogToDigital(new_value, Threshold(), old_state);
@@ -118,7 +118,7 @@ namespace crossput
 
         // returns true if the underlying values were actually modified
         // KBD VERSION
-        [[nodiscard]] constexpr bool Modify(const float new_value, const timestamp_t ts, bool &new_state, auto &counter)
+        [[nodiscard]] constexpr bool Modify(const float new_value, const timestamp_t ts, bool &new_state, auto &counter) noexcept
         {
             const bool old_state = State();
             new_state = AnalogToDigital(new_value, Threshold(), old_state);
@@ -137,7 +137,7 @@ namespace crossput
             return value_changed || state_changed || (force_write && new_state);
         }
         
-        constexpr void Modify(const float new_value, const timestamp_t ts)
+        constexpr void Modify(const float new_value, const timestamp_t ts) noexcept
         {
             const bool old_state = State();
             const bool new_state = AnalogToDigital(new_value, Threshold(), old_state);
@@ -148,7 +148,7 @@ namespace crossput
         }
 
         // KBD VERSION
-        constexpr void Modify(const float new_value, const timestamp_t ts, auto &counter)
+        constexpr void Modify(const float new_value, const timestamp_t ts, auto &counter) noexcept
         {
             const bool old_state = State();
             const bool new_state = AnalogToDigital(new_value, Threshold(), old_state);
@@ -180,7 +180,7 @@ namespace crossput
         int64_t sdx;    // scroll delta X
         int64_t sdy;    // scroll delta Y
 
-        inline bool operator==(const MouseData &other) const noexcept
+        constexpr bool operator==(const MouseData &other) const noexcept
         {
             return x == other.x
                 && y == other.y
@@ -188,11 +188,6 @@ namespace crossput
                 && dy == other.dy
                 && sdx == other.sdx
                 && sdy == other.sdy;
-        }
-
-        inline bool operator!=(const MouseData &other) const noexcept
-        {
-            return !(operator==(other));
         }
     };
 
@@ -275,7 +270,7 @@ namespace crossput
 
     // non-filtered callback
     template <typename TCallback>
-    constexpr EventCallbackKey ConstructEventCallbackKey(const ID device_id)
+    constexpr EventCallbackKey ConstructEventCallbackKey(const ID device_id) noexcept
     {
         return EventCallbackKey
         {
@@ -294,7 +289,7 @@ namespace crossput
 
     // filtered callback
     template <typename TCallback, EvcbFilterType T>
-    constexpr EventCallbackKey ConstructEventCallbackKey(const ID device_id, const T value_filter)
+    constexpr EventCallbackKey ConstructEventCallbackKey(const ID device_id, const T value_filter) noexcept
     {
         return EventCallbackKey
         {
@@ -674,8 +669,8 @@ namespace crossput
     class KeyboardCallbackManager {};
     class GamepadCallbackManager {};
 
-    constexpr void ProtectManagementAPI(const char *const details_str) {}
-    constexpr void ProtectManagementAPI(const std::string details_str) {}
+    constexpr void ProtectManagementAPI(const char *const details_str) noexcept {}
+    constexpr void ProtectManagementAPI(const std::string details_str) noexcept {}
 }
 
 #endif // CROSSPUT_FEATURE_CALLBACK
@@ -739,8 +734,8 @@ namespace crossput
         constexpr ForceType GetType() const noexcept override final { return type_; }
         constexpr IDevice *GetDevice() const noexcept override final { return p_device_; }
         constexpr bool IsOrphaned() const noexcept override final { return p_device_ == nullptr; }
-        constexpr uint32_t GetMotorIndex() const noexcept override final { return motor_index_; }
-        constexpr ForceParams &Params() override final { return params_; }
+        constexpr uint32_t GetMotorIndex() const override final { return motor_index_; }
+        constexpr ForceParams &Params() noexcept override final { return params_; }
 
         virtual ~BaseForce() = default;
     };
@@ -1016,7 +1011,7 @@ namespace crossput
         }
 
         #ifdef CROSSPUT_FEATURE_FORCE
-        constexpr uint32_t GetMotorCount() const noexcept override final { return is_connected_ ? static_cast<uint32_t>(motor_to_member_.size()) : 0; }
+        constexpr uint32_t GetMotorCount() const override final { return is_connected_ ? static_cast<uint32_t>(motor_to_member_.size()) : 0; }
 
         float GetGain(const uint32_t motor_index) const override final
         {
@@ -1132,16 +1127,16 @@ namespace crossput
 
         void Update() override;
 
-        constexpr void GetPosition(int64_t &x, int64_t &y) const override;
-        constexpr void GetDelta(int64_t &x, int64_t &y) const override;
-        constexpr void GetScroll(int64_t &x, int64_t &y) const override;
-        constexpr void GetScrollDelta(int64_t &x, int64_t &y) const override;
-        constexpr uint32_t GetButtonCount() const override;
-        constexpr void SetButtonThreshold(const uint32_t index, float threshold) override;
-        constexpr void SetGlobalThreshold(float threshold) override;
-        constexpr float GetButtonThreshold(const uint32_t index) const override;
-        constexpr float GetButtonValue(const uint32_t index) const override;
-        constexpr bool GetButtonState(const uint32_t index, float &time) const override;
+        void GetPosition(int64_t &x, int64_t &y) const override;
+        void GetDelta(int64_t &x, int64_t &y) const override;
+        void GetScroll(int64_t &x, int64_t &y) const override;
+        void GetScrollDelta(int64_t &x, int64_t &y) const override;
+        uint32_t GetButtonCount() const override;
+        void SetButtonThreshold(const uint32_t index, float threshold) override;
+        void SetGlobalThreshold(float threshold) override;
+        float GetButtonThreshold(const uint32_t index) const override;
+        float GetButtonValue(const uint32_t index) const override;
+        bool GetButtonState(const uint32_t index, float &time) const override;
 
     private:
         void OnDisconnected() override;
@@ -1165,12 +1160,12 @@ namespace crossput
 
         void Update() override;
 
-        constexpr uint32_t GetNumKeysPressed() const override;
-        constexpr void SetKeyThreshold(const Key key, float threshold) override;
-        constexpr void SetGlobalThreshold(float threshold) override;
-        constexpr float GetKeyThreshold(const Key key) const override;
-        constexpr float GetKeyValue(const Key key) const override;
-        constexpr bool GetKeyState(const Key key, float &time) const override;
+        uint32_t GetNumKeysPressed() const override;
+        void SetKeyThreshold(const Key key, float threshold) override;
+        void SetGlobalThreshold(float threshold) override;
+        float GetKeyThreshold(const Key key) const override;
+        float GetKeyValue(const Key key) const override;
+        bool GetKeyState(const Key key, float &time) const override;
 
     private:
         void OnDisconnected() override;
@@ -1195,13 +1190,13 @@ namespace crossput
 
         void Update() override;
 
-        constexpr void SetButtonThreshold(const Button button, float threshold) override;
-        constexpr void SetGlobalThreshold(float threshold) override;
-        constexpr float GetButtonThreshold(const Button button) const override;
-        constexpr float GetButtonValue(const Button button) const override;
-        constexpr bool GetButtonState(const Button button, float &time) const override;
-        constexpr uint32_t GetThumbstickCount() const override;
-        constexpr void GetThumbstick(const uint32_t index, float &x, float &y) const override;
+        void SetButtonThreshold(const Button button, float threshold) override;
+        void SetGlobalThreshold(float threshold) override;
+        float GetButtonThreshold(const Button button) const override;
+        float GetButtonValue(const Button button) const override;
+        bool GetButtonState(const Button button, float &time) const override;
+        uint32_t GetThumbstickCount() const override;
+        void GetThumbstick(const uint32_t index, float &x, float &y) const override;
 
     private:
         void OnDisconnected() override;
