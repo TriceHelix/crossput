@@ -377,7 +377,7 @@ namespace crossput
         void Update() override final;
 
         #ifdef CROSSPUT_FEATURE_FORCE
-        constexpr bool SupportsForce(const uint32_t motor_index, const ForceType type) const noexcept override final
+        constexpr bool SupportsForce(const uint32_t motor_index, const ForceType type) const override final
         {
             // different motors have different capabilities
             return is_connected_
@@ -385,12 +385,12 @@ namespace crossput
                 && motor_capabilities_[motor_index][static_cast<int>(type)];
         }
 
-        constexpr uint32_t GetMotorCount() const noexcept override final
+        constexpr uint32_t GetMotorCount() const override final
         {
             return is_connected_ ? static_cast<uint32_t>(motor_capabilities_.size()) : 0;
         }
 
-        constexpr float GetGain(const uint32_t motor_index) const noexcept override final
+        constexpr float GetGain(const uint32_t motor_index) const override final
         {
             return (is_connected_ && motor_index < motor_gains_.size())
                 ? motor_gains_[motor_index]
@@ -487,7 +487,7 @@ namespace crossput
         constexpr bool GetButtonState(const uint32_t index, float &time) const noexcept override;
 
     protected:
-        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_MOUSE; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept override { return Q_INPUT_KIND_MOUSE; }
         void PreInputHandling() override;
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnDisconnected() override;
@@ -517,7 +517,7 @@ namespace crossput
         constexpr bool GetKeyState(const Key key, float &time) const override;
 
     private:
-        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_KEYBOARD; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept override { return Q_INPUT_KIND_KEYBOARD; }
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnConnected() override;
         void OnDisconnected() override;
@@ -549,7 +549,7 @@ namespace crossput
         constexpr void GetThumbstick(const uint32_t index, float &x, float &y) const override;
 
     private:
-        constexpr GameInputKind GetQueryInputKind() const noexcept { return Q_INPUT_KIND_GAMEPAD; }
+        constexpr GameInputKind GetQueryInputKind() const noexcept override { return Q_INPUT_KIND_GAMEPAD; }
         bool HandleNativeReading(IGameInputReading *const p_reading) override;
         void OnDisconnected() override;
 

@@ -863,7 +863,7 @@ namespace crossput
         virtual IDevice *GetDevice() const noexcept = 0;
 
         /// @return True if the target device has disconnected since the creation of the force, false otherwise.
-        virtual bool IsOrphaned() const noexcept = 0;
+        virtual bool IsOrphaned() const = 0;
 
         /// @return Current status of the physical force. Will always be ForceStatus::INACTIVE if the force has been orphaned.
         virtual ForceStatus GetStatus() const = 0;

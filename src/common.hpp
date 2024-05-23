@@ -234,7 +234,7 @@ namespace crossput
     class TypedInterface : public virtual IDevice
     {
     public:
-        constexpr DeviceType GetType() const noexcept final { return TYPE; }
+        constexpr DeviceType GetType() const noexcept override final { return TYPE; }
     };
 }
 
@@ -733,7 +733,7 @@ namespace crossput
         constexpr ID GetID() const noexcept override final { return id_; }
         constexpr ForceType GetType() const noexcept override final { return type_; }
         constexpr IDevice *GetDevice() const noexcept override final { return p_device_; }
-        constexpr bool IsOrphaned() const noexcept override final { return p_device_ == nullptr; }
+        constexpr bool IsOrphaned() const override final { return p_device_ == nullptr; }
         constexpr uint32_t GetMotorIndex() const override final { return motor_index_; }
         constexpr ForceParams &Params() noexcept override final { return params_; }
 
