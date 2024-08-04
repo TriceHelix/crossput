@@ -10,7 +10,7 @@
 
 cmake_minimum_required(VERSION 3.27)
 
-set(CROSSPUT_VERSION 0.2.1)
+set(CROSSPUT_VERSION 0.3.0)
 project(crossput
     VERSION ${CROSSPUT_VERSION}
     LANGUAGES CXX
