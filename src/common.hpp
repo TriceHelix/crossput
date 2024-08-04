@@ -58,7 +58,7 @@ namespace crossput
     extern std::unordered_map<ID, BaseInterface *> glob_interfaces;
 
 
-    constexpr float TimestampDeltaSeconds(const timestamp_t first, const timestamp_t second) noexcept
+    inline constexpr float TimestampDeltaSeconds(const timestamp_t first, const timestamp_t second) noexcept
     {
         return first != 0
             ? static_cast<float>(second - first) * 1E-6F // microsecond ticks -> seconds
@@ -66,7 +66,7 @@ namespace crossput
     }
 
 
-    constexpr bool AnalogToDigital(const float value, const float threshold, const bool current_state) noexcept
+    inline constexpr bool AnalogToDigital(const float value, const float threshold, const bool current_state) noexcept
     {
         // prevent rapid changes of digital state when analog value "bounces" around threshold
         constexpr float ANTI_BOUNCE = 0.025F;

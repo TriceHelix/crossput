@@ -1095,7 +1095,8 @@ public:
     }
 
     template<typename FormatContext>
-    inline auto format(const crossput::ID &id, FormatContext &ctx) const noexcept(noexcept(std::formatter<crossput::ID::value_type>().format(id.value, ctx)))
+    inline auto format(const crossput::ID &id, FormatContext &ctx) const
+        noexcept(noexcept(formatter_type().format(id.value, ctx)))
     {
         return formatter_type().format(id.value, ctx);
     }

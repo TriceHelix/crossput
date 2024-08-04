@@ -1,17 +1,31 @@
 # crossput
+
+---
+
+## NOTICE OF DEPRECATION
+
+This repository is no longer used for development. Instead, the project has been internally merged into [Empty Engine](https://github.com/EmptyEngine).
+Critical fixes may still be applied to the standalone version, however this project will not receive any sort of 1.0 release on its own.
+To those discovering crossput in the future, I sincerely hope that this little codebase is of use to you in some form.
+Thank you for your interest.
+
+---
+
 ## Cross-Platform Input from Mice, Keyboards, and Gamepads in C++
 
-Supports Windows PC, Xbox, and all major Linux distributions. More platforms to come in the future.
+Supports Windows PC, Xbox, and all major Linux distributions.
 
 ---
 
 ### Features
+
 - Device-centric API for interacting with mice, keyboards, and gamepads (controllers/joysticks)
 - Fast, lightweight, suitable for real-time applications (e.g. video games)
 - No runtime dependencies (besides operating system)
 - Compatible with C++11 and newer (C++20 only required during compilation)
 
 ### Optional Features
+
 - Event-centric API which enables subscription to certain types of input or sources of input
 - Rumble and Force-Feedback support for capable hardware of any type
 - Aggregation API for treating a group of devices as a single entity
@@ -26,15 +40,17 @@ Whether a feature is available to the user is indicated via preprocessor defines
 Requires CMake 3.27+ for configuration and C++20 support from your compiler of choice. Tested with MSVC 19 and GCC 13.
 Simply add the repository to your project (e.g. via the ExternalProject function) and link to target `crossput`.
 Must be built as a dynamic library.
-Installing crossput is not supported yet, though this will likely change in the future.
 
 #### Prerequisites
+
 Currently, building for Windows (PC, Xbox) requires installing the [Microsoft Game Development Kit (GDK)](https://github.com/microsoft/GDK).
 crossput only needs access to a single header in the GDK, however it is unfortunately not available under an open-source license (yet).
 According to Microsoft, the GDK will be part of the Windows SDK in the future, so this requirement is subject to change.
 
 #### Configuration
+
 [CMakeLists.txt](./CMakeLists.txt) exposes the following options for customization:
+
 - `CROSSPUT_FEATURE_CALLBACK` (default: true)
 If true, enables the callback feature.
 This adds an event-driven API for handling input from specific sources via a subscription model.
@@ -59,12 +75,11 @@ If true, builds all available demonstration executables. Some might require cert
 ---
 
 ### Restrictions
+
 - No thread-safety is provided. Reading input data from multiple threads is entirely safe. However, modifying *any* device, (un-)registering callbacks, creating/destroying devices or forces, or any other operations which could introduce race conditions, are not supported in parallel. A simple solution is correctly separating device management and data processing in your application. For example, a video game might update all devices at the beginning of its "update loop" using the main thread. Later on, multiple worker threads could read data from the devices and adjust player movement, UI, etc. As long as these "stages" are strictly separated and do not overlap, no race conditions will occur.
 
 - On Linux, the active user requires read/write permissions for `/dev/input`, which can be accomplished by adding them to the "input" group.
 Often times this will already be the case (for example, Steam does it automatically), however failing to do so will lead to runtime exceptions.
-
-- Lots of features have yet to be tested with multiple kinds of hardware (especially force-feedback). Issues and PRs with feedback and bugfixes are highly appreciated!
 
 - The aggregation feature is 100% finished but lacks a demo executable.
 
